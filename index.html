@@ -6,286 +6,227 @@
   <title>Alpha Pulse — AI Quant Trading Advisory</title>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0a0a0f;
-      color: #e0e0e0;
-      line-height: 1.6;
-    }
-    .bg-glow {
-      position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
-      background: radial-gradient(ellipse at 30% 20%, rgba(0, 200, 255, 0.08) 0%, transparent 60%),
-                  radial-gradient(ellipse at 70% 80%, rgba(120, 50, 255, 0.06) 0%, transparent 60%);
-      z-index: -1;
-    }
-    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-
-    nav {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    nav .logo { font-size: 1.4rem; font-weight: 700; color: #00c8ff; letter-spacing: 1px; }
-    nav .logo span { color: #e0e0e0; }
-    nav a { color: #888; text-decoration: none; margin-left: 24px; font-size: 0.9rem; }
-    nav a:hover { color: #00c8ff; }
-
-    .hero {
-      text-align: center; padding: 100px 0 80px;
-    }
-    .hero h1 {
-      font-size: 3.5rem; font-weight: 800; margin-bottom: 20px;
-      background: linear-gradient(135deg, #00c8ff, #7a3aff);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .hero p { font-size: 1.2rem; color: #999; max-width: 650px; margin: 0 auto 40px; }
-    .hero .cta {
-      display: inline-block; padding: 16px 40px;
-      background: linear-gradient(135deg, #00c8ff, #7a3aff);
-      color: #fff; font-weight: 600; border-radius: 8px; text-decoration: none;
-      font-size: 1.1rem; transition: transform 0.2s;
-    }
-    .hero .cta:hover { transform: translateY(-2px); }
-
-    .live-ticker {
-      background: rgba(255,255,255,0.03); border-radius: 12px;
-      padding: 20px; margin: 40px auto; max-width: 750px;
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .live-ticker .label {
-      color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px;
-      margin-bottom: 12px;
-    }
-    .live-ticker .tickers {
-      display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
-    }
-    .live-ticker .tick { text-align: center; }
-    .live-ticker .tick .sym { font-weight: 700; font-size: 1rem; }
-    .live-ticker .tick .price { color: #999; font-size: 0.9rem; }
-    .live-ticker .tick .signal { font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; margin-top: 4px; display: inline-block; }
-    .signal-buy { background: rgba(0,200,100,0.2); color: #00c864; }
-    .signal-sell { background: rgba(255,60,60,0.2); color: #ff3c3c; }
-    .signal-hold { background: rgba(255,200,0,0.2); color: #ffc800; }
-
-    .features {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
-      margin: 80px 0;
-    }
-    .feature {
-      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 12px; padding: 32px 24px;
-    }
-    .feature h3 { color: #00c8ff; margin-bottom: 12px; font-size: 1.2rem; }
-    .feature p { color: #888; font-size: 0.9rem; }
-
-    .pricing {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
-      margin: 80px 0;
-    }
-    .plan {
-      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 12px; padding: 40px 24px; text-align: center;
-    }
-    .plan.featured {
-      border-color: #00c8ff; transform: scale(1.05);
-      background: rgba(0,200,255,0.03);
-    }
-    .plan h3 { font-size: 1.3rem; margin-bottom: 8px; }
-    .plan .price { font-size: 2.5rem; font-weight: 800; color: #fff; margin: 16px 0; }
-    .plan .price span { font-size: 1rem; color: #666; }
-    .plan ul { list-style: none; margin: 24px 0; }
-    .plan ul li { padding: 8px 0; color: #999; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
-    .plan ul li:before { content: "✓ "; color: #00c864; }
-    .plan .btn {
-      display: inline-block; padding: 12px 32px; border-radius: 8px;
-      text-decoration: none; font-weight: 600; margin-top: 16px;
-    }
-    .plan .btn-outline { border: 1px solid #00c8ff; color: #00c8ff; }
-    .plan .btn-solid { background: linear-gradient(135deg, #00c8ff, #7a3aff); color: #fff; }
-
-    .recent-picks { margin: 80px 0; }
-    .recent-picks h2 { margin-bottom: 24px; font-size: 1.8rem; }
-    .pick {
-      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 8px; padding: 16px 20px; margin-bottom: 12px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .pick .left .tkr { font-weight: 700; }
-    .pick .left .desc { color: #888; font-size: 0.85rem; }
-    .pick .right { text-align: right; }
-    .pick .right .roi { color: #00c864; font-weight: 700; }
-    .pick .right .date { color: #666; font-size: 0.8rem; }
-
-    .last-updated {
-      text-align: center; color: #555; font-size: 0.8rem; margin: 10px 0;
-    }
-
-    footer {
-      text-align: center; padding: 40px 0; color: #555; font-size: 0.85rem;
-      border-top: 1px solid rgba(255,255,255,0.06); margin-top: 80px;
-    }
-
-    @media (max-width: 768px) {
-      .hero h1 { font-size: 2.2rem; }
-      .features, .pricing { grid-template-columns: 1fr; }
-      .plan.featured { transform: none; }
-    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#0a0a0f; color:#e0e0e0; line-height:1.6; }
+    .bg-glow { position:fixed; top:-50%; left:-50%; width:200%; height:200%; background:radial-gradient(ellipse at 30% 20%,rgba(0,200,255,0.08) 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,rgba(120,50,255,0.06) 0%,transparent 60%); z-index:-1; }
+    .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+    nav { display:flex; justify-content:space-between; align-items:center; padding:20px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+    nav .logo { font-size:1.4rem; font-weight:700; color:#00c8ff; letter-spacing:1px; }
+    nav .logo span { color:#e0e0e0; }
+    nav a { color:#888; text-decoration:none; margin-left:24px; font-size:0.9rem; }
+    nav a:hover { color:#00c8ff; }
+    .hero { text-align:center; padding:100px 0 60px; }
+    .hero h1 { font-size:3.5rem; font-weight:800; margin-bottom:20px; background:linear-gradient(135deg,#00c8ff,#7a3aff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero p { font-size:1.2rem; color:#999; max-width:650px; margin:0 auto 40px; }
+    .hero .cta { display:inline-block; padding:16px 40px; background:linear-gradient(135deg,#00c8ff,#7a3aff); color:#fff; font-weight:600; border-radius:8px; text-decoration:none; font-size:1.1rem; transition:transform 0.2s; cursor:pointer; border:none; }
+    .hero .cta:hover { transform:translateY(-2px); }
+    .live-ticker { background:rgba(255,255,255,0.03); border-radius:12px; padding:20px; margin:40px auto; max-width:800px; border:1px solid rgba(255,255,255,0.06); }
+    .live-ticker .label { color:#666; font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px; }
+    .live-ticker .tickers { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+    .live-ticker .tick { text-align:center; min-width:70px; }
+    .live-ticker .tick .sym { font-weight:700; font-size:0.95rem; }
+    .live-ticker .tick .price { color:#999; font-size:0.85rem; }
+    .live-ticker .tick .signal { font-size:0.7rem; padding:2px 8px; border-radius:4px; margin-top:4px; display:inline-block; }
+    .signal-buy { background:rgba(0,200,100,0.2); color:#00c864; }
+    .signal-sell { background:rgba(255,60,60,0.2); color:#ff3c3c; }
+    .signal-hold { background:rgba(255,200,0,0.2); color:#ffc800; }
+    .features { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin:80px 0; }
+    .feature { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:32px 24px; }
+    .feature h3 { color:#00c8ff; margin-bottom:12px; font-size:1.2rem; }
+    .feature p { color:#888; font-size:0.9rem; }
+    .pricing { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin:80px 0; }
+    .plan { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:40px 24px; text-align:center; }
+    .plan.featured { border-color:#00c8ff; transform:scale(1.05); background:rgba(0,200,255,0.03); }
+    .plan h3 { font-size:1.3rem; margin-bottom:8px; }
+    .plan .price { font-size:2.5rem; font-weight:800; color:#fff; margin:16px 0; }
+    .plan .price span { font-size:1rem; color:#666; }
+    .plan ul { list-style:none; margin:24px 0; }
+    .plan ul li { padding:8px 0; color:#999; font-size:0.9rem; border-bottom:1px solid rgba(255,255,255,0.04); }
+    .plan ul li:before { content:"\u2713 "; color:#00c864; }
+    .plan .btn { display:inline-block; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; margin-top:16px; cursor:pointer; border:none; font-size:1rem; }
+    .plan .btn-outline { border:1px solid #00c8ff; color:#00c8ff; background:transparent; }
+    .plan .btn-solid { background:linear-gradient(135deg,#00c8ff,#7a3aff); color:#fff; }
+    .recent-picks { margin:80px 0; }
+    .recent-picks h2 { margin-bottom:24px; font-size:1.8rem; }
+    .pick { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:16px 20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+    .pick .left .tkr { font-weight:700; }
+    .pick .left .desc { color:#888; font-size:0.85rem; }
+    .pick .right { text-align:right; }
+    .pick .right .roi { color:#00c864; font-weight:700; }
+    .pick .right .date { color:#666; font-size:0.8rem; }
+    .options-section { margin:80px 0; }
+    .options-section h2 { margin-bottom:8px; font-size:1.8rem; }
+    .op-subtitle { color:#666; font-size:0.9rem; margin-bottom:24px; }
+    .op-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+    .op-chain { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:16px; }
+    .op-header { margin-bottom:10px; display:flex; gap:12px; align-items:center; }
+    .op-tkr { font-weight:700; font-size:1.1rem; color:#00c8ff; }
+    .op-price { color:#999; }
+    .op-exp { color:#666; font-size:0.8rem; margin-left:auto; }
+    .op-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+    .op-table th { color:#555; text-align:left; padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .op-table td { padding:4px 8px; color:#ccc; }
+    .op-table .strike { color:#fff; font-weight:600; }
+    .op-table .mid { color:#00c8ff; }
+    .op-table .upside { color:#00c864; font-weight:600; }
+    .last-updated { text-align:center; color:#555; font-size:0.8rem; margin:10px 0; }
+    .social-count { text-align:center; color:#555; font-size:0.85rem; margin:10px 0; }
+    .social-count strong { color:#00c8ff; }
+    footer { text-align:center; padding:40px 0; color:#555; font-size:0.85rem; border-top:1px solid rgba(255,255,255,0.06); margin-top:80px; }
+    .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center; }
+    .modal { background:#1a1a2e; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:40px; max-width:420px; width:90%; }
+    .modal h3 { color:#00c8ff; margin-bottom:8px; }
+    .modal p { color:#888; font-size:0.9rem; margin-bottom:20px; }
+    .modal input { width:100%; padding:12px 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#fff; font-size:1rem; margin-bottom:8px; outline:none; }
+    .modal input:focus { border-color:#00c8ff; }
+    .modal .msg { font-size:0.85rem; margin-bottom:8px; text-align:center; min-height:20px; }
+    .modal .btn-primary { width:100%; padding:12px; background:linear-gradient(135deg,#00c8ff,#7a3aff); color:#fff; border:none; border-radius:8px; font-weight:600; font-size:1rem; cursor:pointer; }
+    .modal .btn-close { background:none; border:none; color:#555; cursor:pointer; font-size:0.85rem; display:block; margin:12px auto 0; }
+    @media (max-width:768px) { .hero h1 { font-size:2.2rem; } .features,.pricing { grid-template-columns:1fr; } .plan.featured { transform:none; } .op-grid { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
-  <div class="bg-glow"></div>
-
-  <nav class="container">
-    <div class="logo">ALPHA <span>PULSE</span></div>
-    <div>
-      <a href="#features">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#picks">Picks</a>
+<div class="bg-glow"></div>
+<nav class="container">
+  <div class="logo">ALPHA <span>PULSE</span></div>
+  <div><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#picks">Picks</a></div>
+</nav>
+<section class="hero container">
+  <h1>AI That Trades.<br>You That Collect.</h1>
+  <p>Institutional-grade quant analysis delivered to your phone. Real-time signals, options picks, and market scans — fully automated by AI.</p>
+  <a href="https://t.me/Alex006Bot?start=free" class="cta" target="_blank">Start Free &rarr;</a>
+  <div class="last-updated">Last scan: May 23, 2026 at 10:44 UTC</div>
+  <div class="social-count">Join <strong>2 trader</strong> already using Alpha Pulse &middot; <a href="https://t.me/Alex006Bot?start=free" style="color:#00c8ff;text-decoration:none;" target="_blank">Free tier open &rarr;</a></div>
+  <div class="live-ticker">
+    <div class="label">&#9654; Live Market Pulse</div>
+    <div class="tickers">
+        <div class="tick"><div class="sym">NVDA</div><div class="price">$215.33</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">AAPL</div><div class="price">$308.82</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">MSFT</div><div class="price">$418.57</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">GOOGL</div><div class="price">$382.97</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">AMZN</div><div class="price">$266.32</div><div class="signal-buy">BUY</div></div>
+        <div class="tick"><div class="sym">META</div><div class="price">$610.26</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">TSLA</div><div class="price">$426.01</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">AMD</div><div class="price">$467.51</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">SOFI</div><div class="price">$15.62</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">PLTR</div><div class="price">$136.88</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">SPY</div><div class="price">$745.64</div><div class="signal-hold">HOLD</div></div>
+        <div class="tick"><div class="sym">QQQ</div><div class="price">$717.54</div><div class="signal-hold">HOLD</div></div>
     </div>
-  </nav>
-
-  <section class="hero container">
-    <h1>AI That Trades.<br>You That Collect.</h1>
-    <p>Institutional-grade quant analysis delivered to your phone. Real-time signals, options picks, and market scans — fully automated by AI.</p>
-    <a href="#pricing" class="cta">Start Free →</a>
-
-    <div class="last-updated">Last scan: May 23, 2026 at 00:14 UTC</div>
-
-    <div class="live-ticker">
-      <div class="label">► Live Market Pulse</div>
-      <div class="tickers">
-        <div class="tick"><div class="sym">NVDA</div><div class="price">$215.33</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">AAPL</div><div class="price">$308.82</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">MSFT</div><div class="price">$418.57</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">GOOGL</div><div class="price">$382.97</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">AMZN</div><div class="price">$266.32</div><span class="signal-buy">BUY</span></div>
-        <div class="tick"><div class="sym">META</div><div class="price">$610.26</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">TSLA</div><div class="price">$426.01</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">AMD</div><div class="price">$467.51</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">SOFI</div><div class="price">$15.62</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">PLTR</div><div class="price">$136.88</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">SPY</div><div class="price">$745.64</div><span class="signal-hold">HOLD</span></div>
-        <div class="tick"><div class="sym">QQQ</div><div class="price">$717.54</div><span class="signal-hold">HOLD</span></div>
-
-      </div>
+  </div>
+</section>
+<section id="features" class="container features">
+  <div class="feature"><h3>Daily Market Scan</h3><p>RSI, MACD, SMA analysis across 100+ tickers. Know which way the market is leaning before you trade.</p></div>
+  <div class="feature"><h3>Options Watchlist</h3><p>Top 5 option setups with strike prices, breakevens, and ROI projections.</p></div>
+  <div class="feature"><h3>Telegram Alerts</h3><p>Real-time trade signals delivered straight to your phone.</p></div>
+  <div class="feature"><h3>Portfolio Tracking</h3><p>Paper trade our picks alongside us. Track performance and win rate.</p></div>
+  <div class="feature"><h3>Deep Dives</h3><p>Fundamental and technical deep dives on any ticker on demand.</p></div>
+  <div class="feature"><h3>100% Automated</h3><p>No humans, no bias, no emotion. Pure algorithmic analysis running 24/7.</p></div>
+</section>
+<section id="pricing" class="container pricing">
+  <div class="plan">
+    <h3>Free</h3>
+    <div class="price">$0<span>/mo</span></div>
+    <ul><li>Weekly market overview</li><li>Top picks each week</li><li>Email delivery</li></ul>
+    <a href="https://t.me/Alex006Bot?start=free" class="btn btn-outline" target="_blank">Get Started</a>
+  </div>
+  <div class="plan featured">
+    <h3>Premium</h3>
+    <div class="price">$49<span>/mo</span></div>
+    <ul><li>Daily market scan</li><li>Top 5 options picks</li><li>Entry/exit levels</li><li>Real-time Telegram alerts</li><li>Portfolio tracker</li></ul>
+    <a href="javascript:void(0)" class="btn btn-solid" onclick="subscribe('premium')">Subscribe &rarr;</a>
+  </div>
+  <div class="plan">
+    <h3>Institutional</h3>
+    <div class="price">$499<span>/mo</span></div>
+    <ul><li>Everything in Premium</li><li>Custom portfolio</li><li>Dedicated AI agent</li><li>API access</li><li>White-label option</li></ul>
+    <a href="mailto:hello@alpha-pulse.com" class="btn btn-outline">Contact Us</a>
+  </div>
+</section>
+<section class="container options-section">
+  <h2>Options Chain Picks</h2>
+  <p class="op-subtitle">Nearest monthly expiry &middot; High-volume OTM calls</p>
+  <div class="op-grid">
+    <div class="op-chain">
+      <div class="op-header"><span class="op-tkr">NVDA</span> <span class="op-price">$215.33</span> <span class="op-exp">2d · 2026-05-26</span></div>
+      <table class="op-table">
+        <tr><th>Strike</th><th>Mid</th><th>Vol</th><th>OI</th><th>BreakEven</th><th>+%</th></tr>
+        <tr><td class="strike">$217.5</td><td class="mid">$1.33</td><td>58,235</td><td>1,333</td><td>$218.83</td><td class="upside">+1.6%</td></tr><tr><td class="strike">$220.0</td><td class="mid">$0.71</td><td>86,586</td><td>8,572</td><td>$220.71</td><td class="upside">+2.5%</td></tr><tr><td class="strike">$222.5</td><td class="mid">$0.38</td><td>29,428</td><td>9,699</td><td>$222.88</td><td class="upside">+3.5%</td></tr>
+      </table>
     </div>
-  </section>
-
-  <section id="features" class="container features">
-    <div class="feature">
-      <h3>📊 Daily Market Scan</h3>
-      <p>RSI, MACD, SMA analysis across 100+ tickers. Know which way the market's leaning before you trade.</p>
+    <div class="op-chain">
+      <div class="op-header"><span class="op-tkr">META</span> <span class="op-price">$610.26</span> <span class="op-exp">2d · 2026-05-26</span></div>
+      <table class="op-table">
+        <tr><th>Strike</th><th>Mid</th><th>Vol</th><th>OI</th><th>BreakEven</th><th>+%</th></tr>
+        <tr><td class="strike">$612.5</td><td class="mid">$3.62</td><td>6,565</td><td>180</td><td>$616.12</td><td class="upside">+1.0%</td></tr><tr><td class="strike">$615.0</td><td class="mid">$2.75</td><td>7,528</td><td>404</td><td>$617.75</td><td class="upside">+1.2%</td></tr><tr><td class="strike">$617.5</td><td class="mid">$2.19</td><td>978</td><td>147</td><td>$619.69</td><td class="upside">+1.5%</td></tr>
+      </table>
     </div>
-    <div class="feature">
-      <h3>📮 Options Watchlist</h3>
-      <p>Top 5 option setups with strike prices, breakevens, and ROI projections. Updated daily before market open.</p>
+    <div class="op-chain">
+      <div class="op-header"><span class="op-tkr">TSLA</span> <span class="op-price">$426.01</span> <span class="op-exp">2d · 2026-05-26</span></div>
+      <table class="op-table">
+        <tr><th>Strike</th><th>Mid</th><th>Vol</th><th>OI</th><th>BreakEven</th><th>+%</th></tr>
+        <tr><td class="strike">$427.5</td><td class="mid">$4.22</td><td>23,874</td><td>944</td><td>$431.72</td><td class="upside">+1.3%</td></tr><tr><td class="strike">$430.0</td><td class="mid">$3.25</td><td>46,097</td><td>3,601</td><td>$433.25</td><td class="upside">+1.7%</td></tr><tr><td class="strike">$432.5</td><td class="mid">$2.48</td><td>13,881</td><td>707</td><td>$434.98</td><td class="upside">+2.1%</td></tr>
+      </table>
     </div>
-    <div class="feature">
-      <h3>📱 Telegram Alerts</h3>
-      <p>Real-time trade signals delivered straight to your phone. No app to install, no emails to check.</p>
+    <div class="op-chain">
+      <div class="op-header"><span class="op-tkr">AMD</span> <span class="op-price">$467.51</span> <span class="op-exp">5d · 2026-05-29</span></div>
+      <table class="op-table">
+        <tr><th>Strike</th><th>Mid</th><th>Vol</th><th>OI</th><th>BreakEven</th><th>+%</th></tr>
+        <tr><td class="strike">$470.0</td><td class="mid">$15.57</td><td>9,304</td><td>2,270</td><td>$485.57</td><td class="upside">+3.9%</td></tr><tr><td class="strike">$472.5</td><td class="mid">$14.38</td><td>2,883</td><td>1,220</td><td>$486.88</td><td class="upside">+4.1%</td></tr><tr><td class="strike">$475.0</td><td class="mid">$13.4</td><td>12,826</td><td>779</td><td>$488.4</td><td class="upside">+4.5%</td></tr>
+      </table>
     </div>
-    <div class="feature">
-      <h3>🗓 Portfolio Tracking</h3>
-      <p>Paper trade our picks alongside us. Track performance, win rate, and ROI month over month.</p>
+    <div class="op-chain">
+      <div class="op-header"><span class="op-tkr">PLTR</span> <span class="op-price">$136.88</span> <span class="op-exp">5d · 2026-05-29</span></div>
+      <table class="op-table">
+        <tr><th>Strike</th><th>Mid</th><th>Vol</th><th>OI</th><th>BreakEven</th><th>+%</th></tr>
+        <tr><td class="strike">$137.0</td><td class="mid">$3.01</td><td>3,919</td><td>1,185</td><td>$140.01</td><td class="upside">+2.3%</td></tr><tr><td class="strike">$138.0</td><td class="mid">$2.52</td><td>5,902</td><td>981</td><td>$140.52</td><td class="upside">+2.7%</td></tr><tr><td class="strike">$139.0</td><td class="mid">$2.09</td><td>5,922</td><td>1,123</td><td>$141.09</td><td class="upside">+3.1%</td></tr>
+      </table>
     </div>
-    <div class="feature">
-      <h3>🔍 Deep Dives</h3>
-      <p>Fundamental and technical deep dives on any ticker on demand. Ask and receive.</p>
-    </div>
-    <div class="feature">
-      <h3>🤖 100% Automated</h3>
-      <p>No humans, no bias, no emotion. Pure algorithmic analysis running 24/7 on live market data.</p>
-    </div>
-  </section>
+  </div>
+</section>
+<section id="picks" class="container recent-picks">
+  <h2>Today's Picks</h2>
 
-  <section id="pricing" class="container pricing">
-    <div class="plan">
-      <h3>Free</h3>
-      <div class="price">$0<span>/mo</span></div>
-      <ul>
-        <li>Weekly market overview</li>
-        <li>1 pick per week</li>
-        <li>Email delivery</li>
-        <li>Public Telegram channel</li>
-      </ul>
-      <a href="#" class="btn btn-outline" onclick="subscribe('free')">Get Started</a>
-    </div>
-
-    <div class="plan featured">
-      <h3>Premium</h3>
-      <div class="price">$49<span>/mo</span></div>
-      <ul>
-        <li>Daily market scan</li>
-        <li>Top 5 options picks</li>
-        <li>Entry/exit levels</li>
-        <li>Real-time Telegram alerts</li>
-        <li>Portfolio tracker</li>
-        <li>Priority support</li>
-      </ul>
-      <a href="#" class="btn btn-solid" onclick="subscribe('premium')">Subscribe →</a>
-    </div>
-
-    <div class="plan">
-      <h3>Institutional</h3>
-      <div class="price">$499<span>/mo</span></div>
-      <ul>
-        <li>Everything in Premium</li>
-        <li>Custom portfolio management</li>
-        <li>Risk analytics & reports</li>
-        <li>Dedicated AI agent</li>
-        <li>API access</li>
-        <li>White-label option</li>
-      </ul>
-      <a href="#" class="btn btn-outline" onclick="subscribe('institutional')">Contact Us</a>
-    </div>
-  </section>
-
-  <section id="picks" class="container recent-picks">
-    <h2>📋 Today's Picks</h2>
-    <div class="pick">
-      <div class="left"><div class="tkr">AMZN</div><div class="desc">Momentum play · RSI 43.3</div></div>
-      <div class="right"><div class="roi">$266.32</div><div class="date">May 23</div></div>
-    </div>
-
-  </section>
-
-  <footer class="container">
-    <p>Alpha Pulse — AI-Powered Quant Trading Advisory</p>
-    <p style="margin-top: 8px;">⚠️ For informational purposes only. Not financial advice. Trading involves risk.</p>
-    <p style="margin-top: 4px;">Powered by OpenClaw 🤖</p>
-  </footer>
-
-  <script>
-    const stripe = Stripe('pk_test_51TXfKVLJy1J1wtNpClRGniyKFlMReimzaQYs1AwU7kwEdHUrRpRaizMQddob33kT5gH6z92KlIrRi5xgQcNCvu9j00IVlxukHC');
-
-    const PRICES = {
-      free: null,
-      premium: 'price_1TYhR7LJy1J1wtNpTeqTiruW',
-      institutional: 'price_1TYhR7LJy1J1wtNpxsJ26utJ'
-    };
-
-    async function subscribe(plan) {
-      if (plan === 'free') {
-        window.open('https://t.me/alphapulse', '_blank');
-        return;
-      }
-      if (plan === 'institutional') {
-        window.location.href = 'mailto:hello@alpha-pulse.com';
-        return;
-      }
-
-      try {
-        const { error } = await stripe.redirectToCheckout({
-          lineItems: [{ price: PRICES[plan], quantity: 1 }],
-          mode: 'subscription',
-          successUrl: window.location.origin + '/success.html',
-          cancelUrl: window.location.origin + '/cancel.html',
-        });
-        if (error) alert(error.message);
-      } catch(e) {
-        alert('Checkout error: ' + e.message);
-      }
-    }
-  </script>
+    <div class="pick"><div class="left"><div class="tkr">AMZN</div><div class="desc">RSI 43.3 · Support $259.34</div></div><div class="right"><div class="roi">$266.32</div><div class="date">May 23, 20</div></div></div>
+</section>
+<footer>
+  <p>Alpha Pulse &mdash; AI Quant Trading Advisory</p>
+  <p class="last-updated">For informational purposes only. Not financial advice. Trading involves risk.</p>
+  <p class="last-updated">Powered by OpenClaw</p>
+</footer>
+<div class="modal-overlay" id="freeModal">
+  <div class="modal">
+    <h3>Join Alpha Pulse Free</h3>
+    <p>Get weekly market recaps, top picks, and exclusive insights.</p>
+    <input type="email" id="emailInput" placeholder="your@email.com">
+    <div class="msg" id="signupMsg"></div>
+    <div class="btn-primary" onclick="submitFree()" id="signupBtn">Get Free Access &rarr;</div>
+    <p style="color:#555;font-size:0.75rem;margin-top:8px;text-align:center;">Or just open Telegram directly: <a href="https://t.me/Alex006Bot?start=free" style="color:#00c8ff;" target="_blank">@Alex006Bot</a></p>
+    <div class="btn-close" onclick="closeModal()">Close</div>
+  </div>
+</div>
+<script>
+const stripe = Stripe('pk_test_51TXfKVLJy1J1wtNpClRGniyKFlMReimzaQYs1AwU7kwEdHUrRpRaizMQddob33kT5gH6z92KlIrRi5xgQcNCvu9j00IVlxukHC');
+const PRICES = {free:null,premium:'price_1TYhR7LJy1J1wtNpTeqTiruW',institutional:'price_1TYhR7LJy1J1wtNpxsJ26utJ'};
+function showModal(plan){if(plan==='free')document.getElementById('freeModal').style.display='flex';}
+function closeModal(){document.getElementById('freeModal').style.display='none';document.getElementById('signupMsg').textContent='';}
+function submitFree(){
+  const e=document.getElementById('emailInput'),b=document.getElementById('signupBtn'),m=document.getElementById('signupMsg');
+  if(!e.value||!e.value.includes('@')){m.style.color='#ff3c3c';m.textContent='Enter a valid email.';return;}
+  b.textContent='One moment...';b.style.opacity='0.6';
+  window.open('https://t.me/Alex006Bot?start=free_'+encodeURIComponent(e.value),'_blank');
+  m.style.color='#00c864';m.textContent='Check Telegram!';
+  b.textContent='Done';b.style.opacity='1';
+  setTimeout(closeModal,2500);
+}
+function subscribe(plan){
+  if(plan==='institutional'){window.location.href='mailto:hello@alpha-pulse.com';return;}
+  if(plan==='premium'){
+    stripe.redirectToCheckout({lineItems:[{price:PRICES[plan],quantity:1}],mode:'subscription',successUrl:window.location.origin+'/',cancelUrl:window.location.origin+'/'})
+    .then(function(r){if(r.error)alert(r.error.message);});
+  }
+}
+document.getElementById('freeModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+</script>
 </body>
 </html>
