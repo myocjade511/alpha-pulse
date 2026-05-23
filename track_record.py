@@ -1,126 +1,119 @@
 #!/usr/bin/env python3
-"""Track record system — logs picks and checks performance."""
-import json, os
+"""
+Alpha Pulse — Track Record Engine
+Automatically tracks performance of all picks and computes win rate.
+Runs as part of daily automation.
+"""
+import sys
+import os
 from datetime import datetime, timedelta
+
+sys.path.insert(0, os.path.dirname(__file__))
+from subscriber_db import init_db, get_picks, compute_win_rate, get_latest_scan
 import yfinance as yf
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TRACK_FILE = os.path.join(BASE_DIR, 'track_record.json')
-SCAN_FILE = os.path.join(BASE_DIR, 'scan_results.json')
+def update_open_picks():
+    """Check open picks against current prices and close them."""
+    init_db()
+    open_picks = get_picks('open')
+    
+    if not open_picks:
+        return {'updated': 0, 'closed': 0}
+    
+    import sqlite3
+    from pathlib import Path
+    DB_PATH = os.path.join(os.path.dirname(__file__), 'subscribers.db')
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    
+    updated = 0
+    closed = 0
+    
+    for pick in open_picks:
+        try:
+            stock = yf.Ticker(pick['ticker'])
+            hist = stock.history(period='5d')
+            current_price = round(hist['Close'].iloc[-1], 2)
+            
+            # Update current price
+            conn.execute(
+                "UPDATE picks SET current_price = ? WHERE id = ?",
+                (current_price, pick['id'])
+            )
+            updated += 1
+            
+            # Check if we should close (10% above entry = win, 5% below = loss)
+            entry = pick['entry_price']
+            if entry and entry > 0:
+                change_pct = (current_price - entry) / entry * 100
+                
+                # Close if pick has been open for 7+ days or hit target/stop
+                opened = datetime.strptime(pick['opened_at'][:10], '%Y-%m-%d')
+                days_open = (datetime.utcnow() - opened).days
+                
+                # Close conditions:
+                # 1. Hit 8% gain target (BUY signal)
+                # 2. Hit 5% loss stop
+                # 3. Been open 14+ days (time decay)
+                if change_pct >= 8 or change_pct <= -5 or days_open >= 14:
+                    conn.execute(
+                        "UPDATE picks SET status = 'closed', exit_price = ?, closed_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        (current_price, pick['id'])
+                    )
+                    closed += 1
+        
+        except Exception as e:
+            pass
+    
+    conn.commit()
+    conn.close()
+    
+    return {'updated': updated, 'closed': closed}
 
-
-def init_track_record():
-    if not os.path.exists(TRACK_FILE):
-        data = {
-            'created_at': datetime.utcnow().isoformat(),
-            'picks': [],
-            'stats': {'total_picks': 0, 'correct': 0, 'incorrect': 0, 'win_rate': 0}
-        }
-        with open(TRACK_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
-        return data
-
-    with open(TRACK_FILE) as f:
-        return json.load(f)
-
-
-def log_daily_picks(scan_data):
-    """Log today's picks."""
-    track = init_track_record()
-
-    # Get BUY signals
-    buys = []
-    for t, d in scan_data['tickers'].items():
-        if isinstance(d, dict) and d.get('signal') == 'BUY':
-            buys.append({'ticker': t, 'entry_price': d['price'], 'rsi': d['rsi']})
-
-    today = datetime.utcnow().strftime('%Y-%m-%d')
-
-    # Don't re-log if already logged today
-    existing_dates = [p['date'] for p in track['picks']]
-    if today in existing_dates:
-        return track
-
-    if buys:
-        entry = {
-            'date': today,
-            'picks': buys,
-            'status': 'open'
-        }
-        track['picks'].append(entry)
-        track['stats']['total_picks'] += len(buys)
-
-    with open(TRACK_FILE, 'w') as f:
-        json.dump(track, f, indent=2)
-
-    return track
-
-
-def check_closed_picks():
-    """Check 7-day-old picks for performance."""
-    track = init_track_record()
-    now = datetime.utcnow()
-
-    for pick in track['picks']:
-        if pick.get('status') != 'open':
-            continue
-
-        pick_date = datetime.strptime(pick['date'], '%Y-%m-%d')
-        if (now - pick_date).days < 5:
-            continue
-
-        # Check each ticker
-        for p in pick['picks']:
-            try:
-                stock = yf.Ticker(p['ticker'])
-                hist = stock.history(period='7d', interval='1d')
-                if hist.empty:
-                    continue
-                current_price = hist['Close'].iloc[-1]
-                entry = p['entry_price']
-                change_pct = round((current_price - entry) / entry * 100, 2)
-                p['exit_price'] = round(current_price, 2)
-                p['return_pct'] = change_pct
-
-                if change_pct > 0:
-                    track['stats']['correct'] += 1
-                else:
-                    track['stats']['incorrect'] += 1
-            except:
-                continue
-
-        pick['status'] = 'closed'
-        pick['checked_at'] = now.isoformat()
-
-    total = track['stats']['correct'] + track['stats']['incorrect']
-    if total > 0:
-        track['stats']['win_rate'] = round(track['stats']['correct'] / total * 100, 1)
-
-    with open(TRACK_FILE, 'w') as f:
-        json.dump(track, f, indent=2)
-
-    return track
-
+def print_track_record():
+    """Print the current track record."""
+    init_db()
+    stats = compute_win_rate()
+    picks = get_picks('closed')
+    open_p = get_picks('open')
+    
+    print(f"📊 **Alpha Pulse Track Record**")
+    print(f"   Generated: {datetime.utcnow().strftime('%b %d, %Y')}")
+    print()
+    print(f"   Closed Trades: {stats['total']}")
+    print(f"   Wins: {stats['wins']} ({stats['win_rate']}%)")
+    print(f"   Losses: {stats['losses']}")
+    print()
+    
+    if picks:
+        print("   Recent Closed Picks:")
+        for p in picks[-5:]:
+            entry = p['entry_price']
+            exit_p = p['exit_price']
+            if entry and exit_p:
+                roi = round((exit_p - entry) / entry * 100, 1)
+                icon = '🟢' if roi > 0 else '🔴'
+                print(f"   {icon} {p['ticker']} — {p['signal'].upper()} — Entry ${entry} → Exit ${exit_p} ({roi:+.1f}%)")
+    
+    if open_p:
+        print()
+        print(f"   Open Positions: {len(open_p)}")
+        for p in open_p[:5]:
+            entry = p['entry_price']
+            current = p['current_price']
+            if entry and current:
+                change = round((current - entry) / entry * 100, 1)
+                icon = '🟢' if change > 0 else '🔴'
+                print(f"   {icon} {p['ticker']} — Entry ${entry} → Now ${current} ({change:+.1f}%)")
+    
+    return stats
 
 if __name__ == '__main__':
     import sys
-
-    if os.path.exists(SCAN_FILE):
-        with open(SCAN_FILE) as f:
-            scan = json.load(f)
-        log_daily_picks(scan)
-
-    check_closed_picks()
-
-    with open(TRACK_FILE) as f:
-        track = json.load(f)
-
-    wins = track['stats']['correct']
-    total = track['stats']['correct'] + track['stats']['incorrect']
-    rate = track['stats']['win_rate']
-
-    print(f"Track Record:")
-    print(f"  Picks tracked: {track['stats']['total_picks']}")
-    print(f"  Closed: {total}")
-    print(f"  Win rate: {rate}% ({wins}/{total})")
-    print(f"  Open positions: {track['stats']['total_picks'] - total}")
+    if len(sys.argv) > 1 and sys.argv[1] == 'update':
+        result = update_open_picks()
+        print(f"Updated: {result['updated']}, Closed: {result['closed']}")
+    else:
+        print_track_record()
